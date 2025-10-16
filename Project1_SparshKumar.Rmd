@@ -1,0 +1,216 @@
+---
+title: "Project 1"
+author: "Sparsh Kumar"
+date: "2025-10-10"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+#hides all warnings, got from https://stackoverflow.com/questions/45399587/how-to-remove-warning-messages-in-r-markdown-document
+```
+
+```{r intro, echo=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+atp<- read.csv("/Users/sparshkumar/atp_matches_qual_chall_2024.csv")
+```
+
+## 1. Introduction
+
+This project explores data from the 2024 ATP Tour Tennis Tournament. This daatset include information such as match scores, player statistics, court surfaces, etc. 
+
+![ATP Court](https://longform.atptour.com/atp-tour-corporate/assets/D7t6oKJEIp/210121_nittocourtimage_treated2_brightened-3360x2236.jpg)
+Image of an ATP Finals Court (Image from ATP Tour).
+[Source](https://www.atptour.com/en/corporate/about)
+
+The data is sourced from Jeff Sackmann on GitHub:
+[GitHub ATP Tour Data](https://github.com/JeffSackmann/tennis_atp)  
+
+In this project, I will answer the following research questions:
+
+RQ1- Does a player's ATP ranking predict their likelihood of winning a match? 
+
+RQ2 - Does the type of court surface affect match duration?
+
+## 2. Data Preperation
+
+I started preparing the data by using read.csv to load the dataset into RStudio.
+
+Then, I created two new variables called total_ace (w_ace + l_ace) and rank_spread (winner_rank - loser_rank). I also removed any missing values from the minutes and surface columns.
+
+```{r dataprep, echo=FALSE}
+
+atp$total_ace <- atp$w_ace + atp$l_ace
+atp$rank_spread <- atp$winner_rank - atp$loser_rank
+
+atp_cleaned <- atp[!is.na(atp$minutes) & !is.na(atp$surface), ]
+```
+
+
+## 3. Variable Descriptions
+
+```{r table, echo=FALSE}
+variable_table <- data.frame(
+  Variable = c("surface", "minutes", "winner_rank", "loser_rank",
+               "rank_diff", "w_ace", "l_ace", "total_aces"),
+  Type = c("Categorical", "Numeric", "Numeric", "Numeric",
+           "Numeric", "Numeric", "Numeric", "Numeric"),
+  Description = c("Type of court surface (Hard, Clay, or Grass)",
+                  "Match duration in minutes",
+                  "ATP rank of the match winner",
+                  "ATP rank of the match loser",
+                  "Difference between winner and loser ranks",
+                  "Aces by the match winner",
+                  "Aces by the match loser",
+                  "Total aces in a match")
+  )
+variable_table
+
+# source: https://www.geeksforgeeks.org/r-language/create-table-from-dataframe-in-r/
+
+```
+
+## 4. Univariate Analysis 
+
+Match Duration:
+
+```{r duration, echo=FALSE}
+ggplot(atp_cleaned, aes(x = minutes)) + geom_histogram(binwidth = 10, fill = "lightgoldenrod2", color = "black") + labs(title = "Match Durations", x = "Match Time in Minutes", y = "Number of Matches")
+
+#got color from https://sape.inf.usi.ch/quick-reference/ggplot2/colour
+
+median_duration <- median(atp_cleaned$minutes, na.rm = TRUE)
+iqr_duration <- IQR(atp_cleaned$minutes, na.rm = TRUE)
+```
+
+The median match time is `r median_duration` minutes. The Interquartile Range of match times is `r iqr_duration` minutes, which means the middle 50% of match durations span approximately `r iqr_duration` minutes. The distribution is skewed right.
+
+Court Surfaces:
+
+```{r surface, echo=FALSE}
+ggplot(atp_cleaned, aes(x = surface)) + geom_bar(fill = "lightgoldenrod2", color = "black") + labs(title = "Matches by Court Surface", x = "Court Surface Type", y = "Number of Matches")
+
+surface_counts <- table(atp_cleaned$surface)
+```
+
+The most common surface is Hard with `r surface_counts["Hard"]` matches. This is followed by Clay with `r surface_counts["Clay"]` matches. Grass is the least common with `r surface_counts["Grass"]` matches.
+
+[Different Court Types Info](https://www.playfinder.com/blog/grass-clay-hard-tennis-courts)  
+
+Winner Rank:
+
+```{r winnerrank, echo=FALSE}
+ggplot(atp_cleaned, aes(x = winner_rank)) + geom_histogram(binwidth = 25, fill = "lightgoldenrod2", color = "black") + labs(title = "Winner ATP Ranks", x = "Winner ATP Rank", y = "Count of Players")
+
+median_rank <- median(atp_cleaned$winner_rank, na.rm = TRUE)
+iqr_rank <- IQR(atp_cleaned$winner_rank, na.rm = TRUE)
+```
+
+The winner median rank is `r median_rank`. The Interquartile Range is `r iqr_rank`. The distribution is skewed right.
+
+
+Total Aces:
+
+```{r aces, echo=FALSE}
+ggplot(atp_cleaned, aes(x = total_ace)) + geom_histogram(binwidth = 1, fill = "lightgoldenrod2", color = "black") + labs(title = "Total Aces per Match", x = "Total Aces", y = "Count")
+
+median_aces <- median(atp_cleaned$total_ace, na.rm = TRUE)
+iqr_aces <- IQR(atp_cleaned$total_ace, na.rm = TRUE)
+```
+
+The median of aces per game is `r round(median_aces, 0)` aces. The Interquartile Range is `r round(iqr_aces, 0)` aces. The distribution is skewed right.
+
+[Aces Definition](https://en.wikipedia.org/wiki/Ace_(tennis))
+
+## 5. Bivariate Analysis:
+
+Winner vs. Loser Rank:
+
+```{r WvL, echo=FALSE}
+ggplot(atp_cleaned, aes(x = winner_rank, y = loser_rank)) + geom_point(color = "lightgoldenrod2") + labs(title = "Winner Rank vs Loser Rank", x = "Winner ATP Rank", y = "Loser ATP Rank")
+corcoeffWvL <- cor(atp_cleaned$winner_rank, atp_cleaned$loser_rank, use = "pairwise.complete.obs")
+#source: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/cor
+```
+
+This scatterplot shows the winner versus loser rank. The pearson correlation coefficient is `r corcoeffWvL`. The scatterplot shows that winner rank is typically lower (better) than loser rank, though there are outliers.
+
+Rank Difference (Winner - Loser) vs. Match Duration:
+
+```{r rdmd, echo=FALSE}
+ggplot(atp_cleaned, aes(x = rank_spread, y = minutes)) + geom_point(color = "lightgoldenrod2", alpha = 0.5) + labs(title = "Rank Difference vs Match Duration", x = "Rank Difference (Winner - Loser)", y = "Match Duration (minutes)")
+correlation_rdmd <- cor(atp_cleaned$rank_spread, atp_cleaned$minutes, use = "pairwise.complete.obs")
+```
+
+This scatterplot shows the difference in rank versus the duration of the match. The pearson correlation coefficient between the rank difference and match duration is `r round(correlation_rdmd, 2)`. This indicates a weak relationship between how close the players ranks are and the length of the match.
+
+Match Duration vs. Surface:
+
+```{r mds, echo=FALSE}
+ggplot(atp_cleaned, aes(x = surface, y = minutes)) + geom_bar(stat = "summary", fun = "median", fill = "lightgoldenrod2", color = "black") +labs(title = "Average Match Duration by Court Surface", x = "Court Surface", y = "Average Match Duration (minutes)")
+```
+
+This bar graph shows the median match duration for each surface of court. Clay has the longest median match duration at `r round(median(atp_cleaned$minutes[atp_cleaned$surface=="Clay"], na.rm=TRUE), 2)` minutes. This is followed by grass, with a median of `r round(median(atp_cleaned$minutes[atp_cleaned$surface=="Grass"], na.rm=TRUE), 2)` minutes. The shortest median duration is hard court material, which has a median of `r round(median(atp_cleaned$minutes[atp_cleaned$surface=="Hard"], na.rm=TRUE), 2)` minutes.
+
+
+Average Aces for Each Surface:
+
+```{r sps, echo=FALSE}
+ggplot(atp_cleaned, aes(x = surface, y = total_ace)) + geom_boxplot(fill = "lightgoldenrod2", color = "black") + labs(title = "Total Aces by Surface", x = "Court Surface", y = "Total Aces per Match")
+
+clay_aces <- atp_cleaned$total_ace[atp_cleaned$surface == "Clay"]
+clay_median <- median(clay_aces, na.rm = TRUE)
+clay_iqr <- IQR(clay_aces, na.rm = TRUE)
+
+grass_aces <- atp_cleaned$total_ace[atp_cleaned$surface == "Grass"]
+grass_median <- median(grass_aces, na.rm = TRUE)
+grass_iqr <- IQR(grass_aces, na.rm = TRUE)
+
+hard_aces <- atp_cleaned$total_ace[atp_cleaned$surface == "Hard"]
+hard_median <- median(hard_aces, na.rm = TRUE)
+hard_iqr <- IQR(hard_aces, na.rm = TRUE)  
+```                                                                                                                      
+
+This boxplot shows the average number of aces for each surface of court.
+
+Clay Courts: The median total aces is `r round(clay_median, 0)`, with an IQR of `r round(clay_iqr, 0)`.
+
+Grass Courts: The median total aces is `r round(grass_median, 0)`, with an IQR of `r round(grass_iqr, 0)`.
+
+Hard Courts: The median total aces is `r round(hard_median, 0)`, with an IQR of `r round(hard_iqr, 0)`.
+
+## 6. Choice Elements
+
+I created two new variables of interest using code (choice F) during the data preparation, where I created total_ace and rank_spread. I used inline statistics (choice A) for every univariate and bivariate graph description to show descriptive statistics. I used two hyperlinks, one was to show the different court types, and the other to show was aces are (choice B). I changed the font size in the conclusion at the end to emphasize the results (choice C). I also added a floating table of contents (choice D).
+
+## 7. Conclusion
+
+Lower-ranked (better) players were more likely to win, confirming that ATP ranking predicts match outcomes.  
+Clay courts had the longest average match durations (`r round(median(atp_cleaned$minutes[atp_cleaned$surface=="Clay"], na.rm=TRUE), 0)` minutes), while Hard courts were shortest (`r round(median(atp_cleaned$minutes[atp_cleaned$surface=="Hard"], na.rm=TRUE), 0)` minutes).  
+
+<span style="color:black; font-weight:bold;">
+In summary, player ranking and court surface both significantly influence match results and duration.
+</span>  
+
+In the future, research could include more years of data to strength the conclusion.
+
+## 8. References
+https://stackoverflow.com/questions/45399587/how-to-remove-warning-messages-in-r-markdown-document
+
+https://www.atptour.com/en/corporate/about
+
+https://github.com/JeffSackmann/tennis_atp
+
+https://www.geeksforgeeks.org/r-language/create-table-from-dataframe-in-r/
+
+https://sape.inf.usi.ch/quick-reference/ggplot2/colour
+
+https://www.playfinder.com/blog/grass-clay-hard-tennis-courts
+
+https://en.wikipedia.org/wiki/Ace_(tennis)
+
+https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/cor

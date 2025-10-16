@@ -48,7 +48,11 @@ Then, I created two new variables called total_ace (w_ace + l_ace) and rank_spre
 atp$total_ace <- atp$w_ace + atp$l_ace
 atp$rank_spread <- atp$winner_rank - atp$loser_rank
 
+# make total_ace from adding winning aces (w_ace) and losing aces (l_ace)
+
 atp_cleaned <- atp[!is.na(atp$minutes) & !is.na(atp$surface), ]
+
+#clean data by removing minutes values and surface values that are blank
 ```
 
 
@@ -71,6 +75,8 @@ variable_table <- data.frame(
   )
 variable_table
 
+#created data frame of the variable descrpitions, with name, type of variable, and description
+
 # source: https://www.geeksforgeeks.org/r-language/create-table-from-dataframe-in-r/
 
 ```
@@ -82,10 +88,14 @@ Match Duration:
 ```{r duration, echo=FALSE}
 ggplot(atp_cleaned, aes(x = minutes)) + geom_histogram(binwidth = 10, fill = "lightgoldenrod2", color = "black") + labs(title = "Match Durations", x = "Match Time in Minutes", y = "Number of Matches")
 
+#histogram of match duration
+
 #got color from https://sape.inf.usi.ch/quick-reference/ggplot2/colour
 
 median_duration <- median(atp_cleaned$minutes, na.rm = TRUE)
 iqr_duration <- IQR(atp_cleaned$minutes, na.rm = TRUE)
+
+#creating descriptive stats
 ```
 
 The median match time is `r median_duration` minutes. The Interquartile Range of match times is `r iqr_duration` minutes, which means the middle 50% of match durations span approximately `r iqr_duration` minutes. The distribution is skewed right.
@@ -94,6 +104,8 @@ Court Surfaces:
 
 ```{r surface, echo=FALSE}
 ggplot(atp_cleaned, aes(x = surface)) + geom_bar(fill = "lightgoldenrod2", color = "black") + labs(title = "Matches by Court Surface", x = "Court Surface Type", y = "Number of Matches")
+
+#bar graph for the court surfaces
 
 surface_counts <- table(atp_cleaned$surface)
 ```
@@ -107,6 +119,8 @@ Winner Rank:
 ```{r winnerrank, echo=FALSE}
 ggplot(atp_cleaned, aes(x = winner_rank)) + geom_histogram(binwidth = 25, fill = "lightgoldenrod2", color = "black") + labs(title = "Winner ATP Ranks", x = "Winner ATP Rank", y = "Count of Players")
 
+#histogram of winner ranks
+
 median_rank <- median(atp_cleaned$winner_rank, na.rm = TRUE)
 iqr_rank <- IQR(atp_cleaned$winner_rank, na.rm = TRUE)
 ```
@@ -119,8 +133,13 @@ Total Aces:
 ```{r aces, echo=FALSE}
 ggplot(atp_cleaned, aes(x = total_ace)) + geom_histogram(binwidth = 1, fill = "lightgoldenrod2", color = "black") + labs(title = "Total Aces per Match", x = "Total Aces", y = "Count")
 
+#histogram of total aces
+
 median_aces <- median(atp_cleaned$total_ace, na.rm = TRUE)
 iqr_aces <- IQR(atp_cleaned$total_ace, na.rm = TRUE)
+
+#descriptive stats
+
 ```
 
 The median of aces per game is `r round(median_aces, 0)` aces. The Interquartile Range is `r round(iqr_aces, 0)` aces. The distribution is skewed right.
@@ -133,7 +152,10 @@ Winner vs. Loser Rank:
 
 ```{r WvL, echo=FALSE}
 ggplot(atp_cleaned, aes(x = winner_rank, y = loser_rank)) + geom_point(color = "lightgoldenrod2") + labs(title = "Winner Rank vs Loser Rank", x = "Winner ATP Rank", y = "Loser ATP Rank")
+#scatterplot of winner vs loser rank
+
 corcoeffWvL <- cor(atp_cleaned$winner_rank, atp_cleaned$loser_rank, use = "pairwise.complete.obs")
+#calculate r value
 #source: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/cor
 ```
 
@@ -143,7 +165,9 @@ Rank Difference (Winner - Loser) vs. Match Duration:
 
 ```{r rdmd, echo=FALSE}
 ggplot(atp_cleaned, aes(x = rank_spread, y = minutes)) + geom_point(color = "lightgoldenrod2", alpha = 0.5) + labs(title = "Rank Difference vs Match Duration", x = "Rank Difference (Winner - Loser)", y = "Match Duration (minutes)")
+#scatterplot for winner rank - loser rank
 correlation_rdmd <- cor(atp_cleaned$rank_spread, atp_cleaned$minutes, use = "pairwise.complete.obs")
+# calculate correlation coefficient
 ```
 
 This scatterplot shows the difference in rank versus the duration of the match. The pearson correlation coefficient between the rank difference and match duration is `r round(correlation_rdmd, 2)`. This indicates a weak relationship between how close the players ranks are and the length of the match.
@@ -162,6 +186,8 @@ Average Aces for Each Surface:
 ```{r sps, echo=FALSE}
 ggplot(atp_cleaned, aes(x = surface, y = total_ace)) + geom_boxplot(fill = "lightgoldenrod2", color = "black") + labs(title = "Total Aces by Surface", x = "Court Surface", y = "Total Aces per Match")
 
+# boxplot for average aces in each surface
+
 clay_aces <- atp_cleaned$total_ace[atp_cleaned$surface == "Clay"]
 clay_median <- median(clay_aces, na.rm = TRUE)
 clay_iqr <- IQR(clay_aces, na.rm = TRUE)
@@ -173,6 +199,8 @@ grass_iqr <- IQR(grass_aces, na.rm = TRUE)
 hard_aces <- atp_cleaned$total_ace[atp_cleaned$surface == "Hard"]
 hard_median <- median(hard_aces, na.rm = TRUE)
 hard_iqr <- IQR(hard_aces, na.rm = TRUE)  
+
+# aces, median aces, and iqr aces for each surface
 ```                                                                                                                      
 
 This boxplot shows the average number of aces for each surface of court.
